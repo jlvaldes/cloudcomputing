@@ -1,0 +1,8 @@
+#1 para iniciar un cambio (primero hay que sincronizar lo de abahjo con lo de arriba, o sea bajar cambios)
+    # git pull
+
+
+#2 para subir cambios
+        # git add .
+        # git commit -m "comments"
+        # git push
