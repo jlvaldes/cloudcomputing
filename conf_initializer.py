@@ -1,17 +1,35 @@
 import os
 
+CONF_DONE = False
+
+DBUSER = None
+DBPASS = None
+DBHOST = None
+DBNAME = None
+
+BUCKET_NAME=None
+BUCKET_ACCESS_KEY_ID=None
+BUCKET_SECRET_ACCESS_KEY=None
+BUCKET_SESSION_TOKEN=None
+
+AWS_KEY_NAME=None
+
+
 def conf_init():
-    print('Carga de variables de entornos')
-    dbuser = os.getenv("DBUSER")
-    dbpass = os.getenv("DBPASS")
-    dbhost = os.getenv("DBHOST")
-    dbname = os.getenv("DBNAME")
+    print('Inicializando variables globales a partir de variables de entornos')
+    DBUSER = os.getenv("DBUSER")
+    DBPASS = os.getenv("DBPASS")
+    DBHOST = os.getenv("DBHOST")
+    DBNAME = os.getenv("DBNAME")
 
-    bucketname = os.getenv("BUCKET_NAME")
-    bucket_access_key = os.getenv("BUCKET_ACCESS_KEY_ID")
-    bucket_secret = os.getenv("BUCKET_SECRET_ACCESS_KEY")
-    bucket_token = os.getenv("BUCKET_SESSION_TOKEN")
+    BUCKET_NAME = os.getenv("BUCKET_NAME")
+    BUCKET_ACCESS_KEY_ID = os.getenv("BUCKET_ACCESS_KEY_ID")
+    BUCKET_SECRET_ACCESS_KEY = os.getenv("BUCKET_SECRET_ACCESS_KEY")
+    BUCKET_SESSION_TOKEN = os.getenv("BUCKET_SESSION_TOKEN")
 
 
+    AWS_KEY_NAME = os.getenv("AWS_KEY_NAME")
+
+    CONF_DONE = True
     print('Se cargaron todas las variables de entorno')
     print('Configuración terminada...')

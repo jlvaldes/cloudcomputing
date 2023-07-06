@@ -2,7 +2,7 @@
 from adn_image_procesor import image_processing
 from conf_initializer import conf_init
 
-def model():
+def start_process():
     print('Inicio de procesamiento de cadenas de ADN')
     conf_init()
     image_processing()
@@ -11,4 +11,4 @@ def model():
 
 
 if __name__ == '__main__':
-    model()
+    start_process()
