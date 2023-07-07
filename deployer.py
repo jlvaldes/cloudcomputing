@@ -1,15 +1,20 @@
 import boto3
+import conf_initializer
+from conf_initializer import conf_init, conf_init_local
 
-from conf_initializer import conf_init, AWS_KEY_NAME, CONF_DONE, DBNAME, DBUSER, DBPASS
+
+def deploy():
+    print('Inicio de despliegue de infraestructura')
+    conf_init_local()
+    #ec2_up_infra()
+    rds_up_infra()
+
 
 def ec2_up_infra(region = 'us-east-1', 
                  instanceType = 't2.micro', 
                  imageId='ami-090e0fc566929d98b', 
                  minCount=1, 
                  maxCount=1):
-    
-    if CONF_DONE == False:
-        conf_init()
 
     print('Iniciando despliegue de infraestructura EC2')
     session = boto3.Session()
@@ -20,7 +25,7 @@ def ec2_up_infra(region = 'us-east-1',
         MinCount=minCount,
         MaxCount=maxCount,
         InstanceType=instanceType,
-        KeyName = AWS_KEY_NAME,
+        KeyName = conf_initializer.AWS_KEYNAME,
         TagSpecifications=[
             {
                 'ResourceType': 'instance',
@@ -36,37 +41,104 @@ def ec2_up_infra(region = 'us-east-1',
     print(f'Instancia ID={instance[0].id} creada exitosamente')
 
 
-def rds_up_infra(vpcSecurityGroupId, 
-                        region = 'us-east-1', 
+def vpc_securitygroup(region = 'us-east-1' ):
+        print("[INFO] Creando grupo de seguridad y reglas de acceso")
+        
+        ec2_client = boto3.client('ec2', region_name = region)
+        response = ec2_client.create_security_group(
+                    Description='Grupo de seguridad para el RDS de Genome',
+                    GroupName='vpc_securitygroup_genome',
+                    VpcId=conf_initializer.VPCID
+                    )
+
+        security_group_id = response['GroupId']
+
+        response = ec2_client.describe_security_groups(GroupIds=[security_group_id])
+        security_group = response['SecurityGroups'][0]
+        egress_rules = security_group['IpPermissionsEgress']
+        ingress_rules = security_group['IpPermissions']
+        
+        if any(rule['IpRanges'] == [{'CidrIp': '0.0.0.0/0'}] and rule['IpProtocol'] == '3306' for rule in ingress_rules):
+            print("La regla de ingress ya existe")
+        else:
+            ec2_client.authorize_security_group_ingress(
+                GroupId=security_group_id,
+                IpPermissions=[
+                    {
+                        'IpProtocol': 'tcp',
+                        'FromPort': 3306,
+                        'ToPort': 3306,
+                        'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+                    }
+                ]
+            )
+
+        if any(rule['IpRanges'] == [{'CidrIp': '0.0.0.0/0'}] and rule['IpProtocol'] == '-1' for rule in egress_rules):
+            print("La regla de egress ya existe.")
+        else:
+            ec2_client.authorize_security_group_egress(
+                GroupId=security_group_id,
+                IpPermissions=[
+                    {
+                        'IpProtocol': '-1',
+                        'FromPort': -1,
+                        'ToPort': -1,
+                        'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+                    }
+                ]
+            )
+
+        print("[INFO] Reglas de seguridad configuradas")
+        return security_group_id
+
+def rds_up_infra(region = 'us-east-1', 
                         dbInstance = 'db.t3.micro', 
                         dbEngine = 'postgres', 
                         allocatedStorageGB = 10,
                         backupRetentionPeriod = 0,
                         multiAZ = False):
-    if CONF_DONE == False:
-        conf_init()
+    
+    security_group_id = vpc_securitygroup()
 
     try:
         session = boto3.Session()
         rds = session.client('rds', region_name=region)
 
+
         rds.create_db_instance(
-            DBName = DBNAME,
+            DBName = conf_initializer.DBNAME,
             DBInstanceIdentifier = 'rds_genome',
-            MasterUsername = DBUSER,
-            MasterUserPassword = DBPASS,
+            MasterUsername = conf_initializer.DBUSER,
+            MasterUserPassword = conf_initializer.DBPASS,
             DBInstanceClass = dbInstance,
             Engine = dbEngine, 
             AllocatedStorage = allocatedStorageGB,
-            VpcSecurityGroupIds=[vpcSecurityGroupId], 
+            VpcSecurityGroupIds=[security_group_id], 
             BackupRetentionPeriod = backupRetentionPeriod, 
             MultiAZ = multiAZ,
             AutoMinorVersionUpgrade = True,
             PubliclyAccessible = True,
         )
 
+        print("[INFO] Base de datos creada con éxito")
+    except Exception as e:
+        print("[ERR] Error al crear la base de datos: ", str(e))
+
+
+def s3_up_infra(region = 'us-east-1'):
+    bucket_name = 's3_genome'
+    try:
+        s3_client = boto3.client('s3')
+        s3_client.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={'LocationConstraint': region}
+            )
+
         print("Base de datos creada con éxito")
     except Exception as e:
         print("Error al crear la base de datos: ", str(e))
 
-    
+
+
+if __name__ == '__main__':
+    deploy()
