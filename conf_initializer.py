@@ -1,7 +1,7 @@
 import os
 
 def conf_init():
-    global AWS_KEYNAME, VPCID, DBUSER, DBPASS, DBHOST, DBNAME, BUCKET_NAME, BUCKET_ACCESS_KEY_ID, BUCKET_SECRET_ACCESS_KEY, BUCKET_SESSION_TOKEN
+    global AWS_KEYNAME, VPCID, DBUSER, DBPASS, DBHOST, DBNAME, BUCKETNAME,SEGGROUPNAME, EC2NAME
 
     print('Inicializando variables globales a partir de variables de entornos')
     DBUSER = os.getenv("DBUSER")
@@ -9,10 +9,10 @@ def conf_init():
     DBHOST = os.getenv("DBHOST")
     DBNAME = os.getenv("DBNAME")
 
-    BUCKET_NAME = os.getenv("BUCKET_NAME")
-    BUCKET_ACCESS_KEY_ID = os.getenv("BUCKET_ACCESS_KEY_ID")
-    BUCKET_SECRET_ACCESS_KEY = os.getenv("BUCKET_SECRET_ACCESS_KEY")
-    BUCKET_SESSION_TOKEN = os.getenv("BUCKET_SESSION_TOKEN")
+
+    BUCKETNAME = os.getenv("BUCKETNAME")
+    DBNAME = os.getenv("SEGGROUPNAME")
+    DBNAME = os.getenv("EC2NAME")
 
     AWS_KEYNAME = os.getenv("AWS_KEYNAME")
     VPCID = os.getenv("VPCID")
@@ -23,7 +23,7 @@ def conf_init():
 
 
 def conf_init_local():
-    global AWS_KEYNAME, VPCID, DBUSER, DBPASS, DBHOST, DBNAME, BUCKET_NAME, BUCKET_ACCESS_KEY_ID, BUCKET_SECRET_ACCESS_KEY, BUCKET_SESSION_TOKEN
+    global AWS_KEYNAME, VPCID, DBUSER, DBPASS, DBHOST, DBNAME, BUCKETNAME,SEGGROUPNAME, EC2NAME
 
     print('Inicializando variables globales a partir de variables de entornos')
     with open('env.list', 'r') as file:
@@ -40,6 +40,11 @@ def conf_init_local():
     DBPASS = env_vars["DBPASS"]
     DBHOST = env_vars["DBHOST"]
     DBNAME = env_vars["DBNAME"]
+    BUCKETNAME = env_vars["BUCKETNAME"]
+    SEGGROUPNAME = env_vars["SEGGROUPNAME"]
+    EC2NAME = env_vars["EC2NAME"]
+    
+    
 
     AWS_KEYNAME = env_vars["AWS_KEYNAME"]
     VPCID = env_vars["VPCID"]

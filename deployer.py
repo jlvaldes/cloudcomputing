@@ -1,6 +1,7 @@
 import boto3
 import conf_initializer
 from conf_initializer import conf_init_local
+from botocore.exceptions import ClientError
 
 
 def deploy():
@@ -8,6 +9,7 @@ def deploy():
     conf_init_local()
     ec2_up_infra()
     rds_up_infra()
+    s3_up_infra()
 
 
 def ec2_up_infra(region = 'us-east-1', 
@@ -32,7 +34,7 @@ def ec2_up_infra(region = 'us-east-1',
                 'Tags': [
                     {
                         'Key': 'Name',
-                        'Value': 'ec2_genome_model'
+                        'Value': conf_initializer.EC2NAME
                     },
                 ]
             },
@@ -43,13 +45,15 @@ def ec2_up_infra(region = 'us-east-1',
 
 def vpc_securitygroup(region = 'us-east-1' ):
         print("  [INFO] Creando grupo de seguridad y reglas de acceso")
-        genome_group_name = 'vpc_securitygroup_genome'
+        genome_group_name = conf_initializer.SEGGROUPNAME
         ec2_client = boto3.client('ec2', region_name = region)
         response = ec2_client.describe_security_groups()
         security_groups = response['SecurityGroups']
         group = [obj for obj in security_groups if obj['GroupName'] == genome_group_name]
 
-        if group == None:
+        if len(group) == 0:
+            print("  [INFO] Creando grupo de seguridad")
+
             response = ec2_client.create_security_group(
                         Description='Grupo de seguridad para el RDS de Genome',
                         GroupName=genome_group_name,
@@ -66,6 +70,8 @@ def vpc_securitygroup(region = 'us-east-1' ):
             if any(rule['IpRanges'] == [{'CidrIp': '0.0.0.0/0'}] and rule['IpProtocol'] == '3306' for rule in ingress_rules):
                 print("  [INFO] La regla de ingress ya existe")
             else:
+                print("  [INFO] Creando regla de ingreso")
+
                 ec2_client.authorize_security_group_ingress(
                     GroupId=security_group_id,
                     IpPermissions=[
@@ -81,6 +87,7 @@ def vpc_securitygroup(region = 'us-east-1' ):
             if any(rule['IpRanges'] == [{'CidrIp': '0.0.0.0/0'}] and rule['IpProtocol'] == '-1' for rule in egress_rules):
                 print("  [INFO] La regla de egress ya existe.")
             else:
+                print("  [INFO] Creando regla de salida")
                 ec2_client.authorize_security_group_egress(
                     GroupId=security_group_id,
                     IpPermissions=[
@@ -116,15 +123,16 @@ def rds_up_infra(region = 'us-east-1',
                         backupRetentionPeriod = 0,
                         multiAZ = False):
     
-    security_group_id = vpc_securitygroup()
+    security_group_id = vpc_securitygroup(region)
 
     try:
         db_genome_name = conf_initializer.DBNAME
-        if db_exist(db_genome_name, region):
+        if db_exist(dbname = db_genome_name, region = region):
             print(f'  [INFO] Ya existe una base de datos con el nombre {db_genome_name} en una instancia de RDS')
         else:
             session = boto3.Session()
             rds = session.client('rds', region_name=region)
+            print('  [INFO] Se creó el cliente de RDS')
 
             rds.create_db_instance(
                 DBName = db_genome_name,
@@ -146,19 +154,34 @@ def rds_up_infra(region = 'us-east-1',
         print("  [ERR] Error al crear la base de datos: ", str(e))
 
 
-def s3_up_infra(region = 'us-east-1'):
-    bucket_name = 's3_genome'
+def exist_s3(instance_name, region = 'us-east-1'):
+    s3_client = boto3.client('s3', region)
+
     try:
-        s3_client = boto3.client('s3')
-        s3_client.create_bucket(
-                Bucket=bucket_name,
-                CreateBucketConfiguration={'LocationConstraint': region}
-            )
+        s3_client.head_bucket(Bucket=instance_name)
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            return False
+        else:
+            print(f"  [ERR] Error al verificar la instancia de S3: {e}")
+            return False
 
-        print("  [INFO] Base de datos creada con éxito")
-    except Exception as e:
-        print("  [ERR] Error al crear la base de datos: ", str(e))
+def s3_up_infra(region = 'us-east-1'):
+    bucket_name = conf_initializer.BUCKETNAME
 
+    if exist_s3(bucket_name, region) == False:
+        try:
+            s3_client = boto3.client('s3', region)
+            s3_client.create_bucket(
+                    Bucket=bucket_name
+                )
+
+            print("  [INFO] Instancia S3 creada con éxito")
+        except Exception as e:
+            print("  [ERR] Error al crear la la instancia S3: ", str(e))
+    else:
+        print(f'  [INFO] Ya existe una instancia S3 con el nombre {bucket_name}')
 
 
 if __name__ == '__main__':
