@@ -106,7 +106,7 @@ def db_exist(dbname, region = 'us-east-1'):
     response = rds_client.describe_db_instances()
     instances = response['DBInstances']
     db =  [instance for instance in instances if instance['DBInstanceIdentifier'] == dbname]
-    return db is not None
+    return len(db) > 0
     
 
 def rds_up_infra(region = 'us-east-1', 
@@ -119,7 +119,7 @@ def rds_up_infra(region = 'us-east-1',
     security_group_id = vpc_securitygroup()
 
     try:
-        db_genome_name = 'dbgenome'
+        db_genome_name = conf_initializer.DBNAME
         if db_exist(db_genome_name, region):
             print(f'  [INFO] Ya existe una base de datos con el nombre {db_genome_name} en una instancia de RDS')
         else:
@@ -127,7 +127,7 @@ def rds_up_infra(region = 'us-east-1',
             rds = session.client('rds', region_name=region)
 
             rds.create_db_instance(
-                DBName = conf_initializer.DBNAME,
+                DBName = db_genome_name,
                 DBInstanceIdentifier = db_genome_name,
                 MasterUsername = conf_initializer.DBUSER,
                 MasterUserPassword = conf_initializer.DBPASS,
