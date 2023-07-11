@@ -4,13 +4,13 @@ from db_repository import save, save_batch
 
 def image_processing():
     get_adn_image()
-    print('Se procesó una imagen de secuenciación de cadena de ADN')
+    print('  [INFO] Se procesó una imagen de secuenciación de cadena de ADN')
     save()
     return 0
 
 
 def image_processing_batch():
     get_adn_image_batch()
-    print('Se procesó un lote de imágenes de secuenciación de cadenas de ADN')
+    print('  [INFO] Se procesó un lote de imágenes de secuenciación de cadenas de ADN')
     save_batch()
     return 0

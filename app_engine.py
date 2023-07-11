@@ -5,8 +5,9 @@ from conf_initializer import conf_init
 def start_process():
     print('Inicio de procesamiento de cadenas de ADN')
     conf_init()
+    print('Iniciando procesamiento de cadena de ADN')
     image_processing()
-    print('Finalización de procesamiento de cadenas de ADN')
+    print('Finalización de procesamiento de cadena de ADN')
     return 0
 
 
